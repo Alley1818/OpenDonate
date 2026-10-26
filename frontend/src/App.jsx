@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Home, Compass, Users, Mail, Bookmark, Settings, Plus, Search,
   MoreHorizontal, MessageCircle, Repeat2, Heart, LockKeyhole, Image,
@@ -6,26 +6,30 @@ import {
   UserRound, LogOut
 } from "lucide-react";
 
-const initialPosts = [
-  {
-    id: 1, name: "Александр Волков", handle: "@volkov", initials: "АВ",
-    tone: "avatar-dark", time: "2 ч", tier: "Для подписчиков",
-    text: "Новый выпуск уже готов. В этот раз разобрал процесс от идеи до результата — с заметками, исходниками и тем, что не вошло в публичную версию.",
-    image: "desk", likes: 128, comments: 18, reposts: 7, liked: false, saved: false, locked: false
-  },
-  {
-    id: 2, name: "Мария Лис", handle: "@marialis", initials: "МЛ",
-    tone: "avatar-light", time: "5 ч", tier: "Открытый пост",
-    text: "Небольшое напоминание: не обязательно каждый день делать что-то большое. Иногда достаточно просто продолжать. Как у вас проходит неделя?",
-    image: null, likes: 64, comments: 12, reposts: 3, liked: false, saved: false, locked: false
-  },
-  {
-    id: 3, name: "Илья Чернов", handle: "@chernov", initials: "ИЧ",
-    tone: "avatar-mid", time: "Вчера", tier: "Клубный уровень",
-    text: "Выложил полный разбор нового проекта: исходные файлы, рабочие заметки и подробности решений. Спасибо всем, кто поддерживает работу.",
-    image: null, likes: 42, comments: 6, reposts: 2, liked: false, saved: false, locked: true
-  }
-];
+const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
+
+function normalizePost(post) {
+  return {
+    id: post.post_id,
+    title: post.title || "",
+    name: "Вы",
+    handle: "@you",
+    initials: "ВЫ",
+    tone: "avatar-dark",
+    time: "из публикаций",
+    tier: "Открытый пост",
+    text: post.content || "",
+    image: null,
+    imageUrl: "",
+    imageName: "",
+    likes: 0,
+    comments: 0,
+    reposts: 0,
+    liked: false,
+    saved: false,
+    locked: false,
+  };
+}
 
 const navItems = [
   { label: "Главная", icon: Home },
@@ -45,7 +49,11 @@ function formatCount(number) {
 }
 
 function App() {
-  const [posts, setPosts] = useState(initialPosts);
+  const [posts, setPosts] = useState([]);
+  const [title, setTitle] = useState("");
+  const [loadingPosts, setLoadingPosts] = useState(true);
+  const [apiError, setApiError] = useState("");
+  const [publishing, setPublishing] = useState(false);
   const [activeNav, setActiveNav] = useState("Главная");
   const [feedTab, setFeedTab] = useState("Для вас");
   const [draft, setDraft] = useState("");
@@ -56,6 +64,27 @@ function App() {
   const [mobileMenu, setMobileMenu] = useState(false);
   const [following, setFollowing] = useState([]);
   const fileInput = useRef(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadPosts() {
+      setLoadingPosts(true);
+      setApiError("");
+      try {
+        const response = await fetch(`${API_URL}/posts`);
+        if (!response.ok) throw new Error(`Сервер ответил ${response.status}`);
+        const data = await response.json();
+        if (!Array.isArray(data)) throw new Error("API вернул неожиданный формат данных");
+        if (!cancelled) setPosts(data.map(normalizePost).reverse());
+      } catch (error) {
+        if (!cancelled) setApiError(`Не удалось загрузить посты. Проверь, запущен ли FastAPI на ${API_URL}.`);
+      } finally {
+        if (!cancelled) setLoadingPosts(false);
+      }
+    }
+    loadPosts();
+    return () => { cancelled = true; };
+  }, []);
 
   const visiblePosts = useMemo(() => {
     let result = [...posts];
@@ -81,26 +110,40 @@ function App() {
     }));
   };
 
-  const publish = () => {
-    if (!draft.trim()) {
-      setNotice("Добавь текст, чтобы опубликовать пост.");
+  const publish = async () => {
+    if (!title.trim() || !draft.trim()) {
+      setNotice("Заполни заголовок и текст публикации.");
       return;
     }
-    const newPost = {
-      id: Date.now(), name: "Вы", handle: "@you", initials: "ВЫ",
-      tone: "avatar-dark", time: "только что", tier: "Открытый пост",
-      text: draft.trim(), image: imageUrl ? "uploaded" : null,
-      imageUrl, imageName, likes: 0, comments: 0, reposts: 0,
-      liked: false, saved: false, locked: false
-    };
-    setPosts((current) => [newPost, ...current]);
-    setDraft("");
-    setImageName("");
-    setImageUrl("");
-    setActiveNav("Главная");
-    setFeedTab("Для вас");
-    setNotice("Пост опубликован");
-    window.setTimeout(() => setNotice(""), 2500);
+    setPublishing(true);
+    try {
+      const response = await fetch(`${API_URL}/posts`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: title.trim(), content: draft.trim() }),
+      });
+      if (!response.ok) {
+        const detail = await response.text();
+        throw new Error(detail || `Сервер ответил ${response.status}`);
+      }
+      const created = normalizePost(await response.json());
+      created.time = "только что";
+      setPosts((current) => [created, ...current]);
+      setTitle("");
+      setDraft("");
+      setImageName("");
+      setImageUrl("");
+      setActiveNav("Главная");
+      setFeedTab("Для вас");
+      setNotice("Пост сохранён в базе данных");
+      window.setTimeout(() => setNotice(""), 2500);
+    } catch (error) {
+      setNotice(error.message?.includes("Failed to fetch")
+        ? "Нет связи с FastAPI. Запусти backend и проверь адрес API."
+        : `Не удалось опубликовать пост: ${error.message}`);
+    } finally {
+      setPublishing(false);
+    }
   };
 
   const chooseImage = (event) => {
@@ -178,15 +221,16 @@ function App() {
               <section className="composer" id="post-composer">
                 <Avatar initials="ВЫ" size="avatar-large" />
                 <div className="composer-main">
+                  <input className="composer-title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Заголовок публикации" maxLength={200} />
                   <textarea value={draft} onChange={(e) => setDraft(e.target.value)} placeholder="Что нового? Поделись с аудиторией..." rows={3} />
-                  {imageUrl && <div className="upload-preview"><img src={imageUrl} alt="Предпросмотр загрузки"/><span>{imageName}</span><button className="icon-button small-icon" onClick={() => { setImageUrl(""); setImageName(""); }} aria-label="Убрать изображение"><X size={16}/></button></div>}
+                  {imageUrl && <div className="upload-preview"><img src={imageUrl} alt="Предпросмотр загрузки"/><span>{imageName} · изображение пока не сохраняется на сервере</span><button className="icon-button small-icon" onClick={() => { setImageUrl(""); setImageName(""); }} aria-label="Убрать изображение"><X size={16}/></button></div>}
                   <div className="composer-footer">
                     <div className="composer-tools">
                       <button className="tool-button" onClick={() => fileInput.current?.click()}><Image size={18}/><span>Фото</span></button>
                       <input ref={fileInput} type="file" accept="image/*" hidden onChange={chooseImage} />
                       <button className="tool-button" onClick={() => setDraft((value) => value + (value ? " " : "") + "✨")}><Smile size={18}/><span>Эмодзи</span></button>
                     </div>
-                    <button className="primary-button publish-button" onClick={publish} disabled={!draft.trim()}>Опубликовать</button>
+                    <button className="primary-button publish-button" onClick={publish} disabled={publishing || !title.trim() || !draft.trim()}>{publishing ? "Публикуем…" : "Опубликовать"}</button>
                   </div>
                 </div>
               </section>
@@ -201,8 +245,9 @@ function App() {
               {activeNav === "Подписки" && <div className="inline-note"><Users size={17}/> Посты авторов, на которых ты подписан</div>}
               {activeNav === "Сохранённое" && <div className="inline-note"><Bookmark size={17}/> Здесь собраны сохранённые публикации</div>}
 
+              {apiError && <div className="inline-note api-error"><X size={17}/>{apiError}</div>}
               <div className="posts-list">
-                {visiblePosts.length ? visiblePosts.map((post) => (
+                {loadingPosts ? <div className="empty-state"><p>Загружаем публикации…</p></div> : visiblePosts.length ? visiblePosts.map((post) => (
                   <article className="post-card" key={post.id}>
                     <div className="post-head">
                       <Avatar initials={post.initials} tone={post.tone}/>
@@ -210,6 +255,7 @@ function App() {
                       <button className="icon-button post-menu" aria-label="Дополнительные действия" onClick={() => setNotice("Дополнительные действия появятся в следующей версии.")}><MoreHorizontal size={21}/></button>
                     </div>
                     <div className="post-content">
+                      {post.title && <h3 className="post-title">{post.title}</h3>}
                       <p>{post.text}</p>
                       {post.image === "desk" && <div className="desk-image" role="img" aria-label="Монохромный рабочий стол"><div className="desk-window"><div className="window-top"><span/><span/><span/></div><div className="window-lines"><b/><b/><b/><b/></div></div><div className="desk-notebook"><span>NOTES</span><i/><i/><i/></div><div className="desk-pen"/><div className="desk-caption">WORK IN PROGRESS</div></div>}
                       {post.image === "uploaded" && post.imageUrl && <img className="post-upload-image" src={post.imageUrl} alt={post.imageName || "Изображение к публикации"}/>}
