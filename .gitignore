@@ -17,3 +17,7 @@ build/
 .idea
 
 .DS_Store
+
+posts.db
+
+node_modules

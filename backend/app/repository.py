@@ -1,6 +1,6 @@
-from app.db import PostOrm, new_session
+from backend.app.db import PostOrm, new_session
 from sqlalchemy import select
-from app.schemas import Post,PostCreate
+from backend.app.schemas import Post,PostCreate
 
 class PostRepository:
     @classmethod

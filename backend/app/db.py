@@ -1,25 +1,11 @@
-from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+from collections.abc import Iterator
+from sqlalchemy import create_engine
+from sqlalchemy.orm import Session, sessionmaker
+from app.config import settings
 
+engine = create_engine(settings.database_url, pool_pre_ping=True)
+SessionLocal = sessionmaker(engine, expire_on_commit=False)
 
-engine = create_async_engine("sqlite+aiosqlite:///posts.db")
-new_session = async_sessionmaker(engine, expire_on_commit=False)
-
-
-
-class Model(DeclarativeBase):
-   pass
-
-class PostOrm(Model):
-   __tablename__ = "posts"
-   post_id: Mapped[int] = mapped_column(primary_key=True)
-   title: Mapped[str]
-   content: Mapped[str | None]
-
-
-async def create_tables():
-    async with engine.begin() as conn:
-       await conn.run_sync(Model.metadata.create_all)
-async def delete_tables():
-   async with engine.begin() as conn:
-       await conn.run_sync(Model.metadata.drop_all)
+def get_db() -> Iterator[Session]:
+    with SessionLocal() as session:
+        yield session
