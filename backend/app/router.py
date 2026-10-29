@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 from backend.app.repository import PostRepository
-from backend.app.schemas import Post, PostCreate, PostResponse
+from backend.app.schemas import PostCreate, PostResponse
 
 
 router = APIRouter(
@@ -8,13 +8,12 @@ router = APIRouter(
    tags=["posts"]
 )
 
-@router.post("", response_model=PostResponse)
+@router.post("", response_model=PostResponse, status_code=201)
 async def add_post(data: PostCreate):
     post_id = await PostRepository.add_post(data)
     return {"post_id": post_id, "title": data.title, "content": data.content}
 
 @router.get("")
-async def get_posts() -> list[Post]:
+async def get_posts() -> list[PostResponse]:
    tasks = await PostRepository.get_posts()
    return tasks
-
