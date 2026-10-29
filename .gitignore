@@ -21,3 +21,5 @@ build/
 posts.db
 
 node_modules
+
+alembic.ini

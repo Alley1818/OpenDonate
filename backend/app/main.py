@@ -12,8 +12,7 @@ from backend.app.auth.user_router import router as user_router
 
 
 @asynccontextmanager
-async def lifespan(_: FastAPI):
-    await run_in_threadpool(Base.metadata.create_all, bind=engine)
+async def lifespan(app: FastAPI):
     yield
 
 
