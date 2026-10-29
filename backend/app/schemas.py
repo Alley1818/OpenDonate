@@ -20,6 +20,8 @@ class UserResponse(BaseModel):
     display_name: str | None
     is_active: bool
 
+class UserPass(UserCreate):
+    password: str
 
 class PostCreate(BaseModel):
     title: str

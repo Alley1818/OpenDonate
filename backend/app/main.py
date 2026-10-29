@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.concurrency import run_in_threadpool
 from backend.app.db import engine
 from backend.app.models import Base
-from backend.app.user_router import router as user_router
+from backend.app.auth.user_router import router as user_router
 
 
 
