@@ -12,7 +12,7 @@ class UserRepository:
         user = User(
             email=data.email,
             username=data.username,
-            password=hash_password(data.password),
+            password_hash=hash_password(data.password),
         )
         db.add(user)
         db.commit()
@@ -34,7 +34,7 @@ class UserRepository:
         stmt = select(User).where(User.username == creds.username)
         user = db.execute(stmt).scalar_one_or_none()
 
-        if not user or not verify_password(creds.password, user.password):
+        if not user or not verify_password(creds.password, user.password_hash):
             raise HTTPException(status_code=401, detail="Incorrect username or password")
 
         token = security.create_access_token(uid=str(user.id))

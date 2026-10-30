@@ -9,10 +9,10 @@ user_router = APIRouter(
 )
 
 @user_router.post("/register", status_code=201)
-async def register_post(data: UserCreate, response: Response, db = Depends(get_db)):
+def register_post(data: UserCreate, response: Response, db = Depends(get_db)):
     return UserRepository.create_user(data=data, db=db, response=response)
 
 
 @user_router.post("/login", status_code=200)
-async def login(creds: UserLogin, response: Response, db = Depends(get_db)):
+def login(creds: UserLogin, response: Response, db = Depends(get_db)):
     return UserRepository.login(creds=creds, db=db, response=response)
