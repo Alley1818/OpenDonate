@@ -1,12 +1,15 @@
 from datetime import datetime
-
 from pydantic import BaseModel, ConfigDict
-
 from backend.app.models import PostVisibility
 
 
 class UserCreate(BaseModel):
     email: str
+    username: str
+    password: str
+
+
+class UserLogin(BaseModel):
     username: str
     password: str
 
@@ -20,8 +23,6 @@ class UserResponse(BaseModel):
     display_name: str | None
     is_active: bool
 
-class UserPass(UserCreate):
-    password: str
 
 class PostCreate(BaseModel):
     title: str
