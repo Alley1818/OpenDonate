@@ -23,7 +23,7 @@ export const realApi = {
       return realApi.auth.login({ username: d.username, password: d.password });
     },
     async login({ username, password }) {
-      const r = await request("/users/login", { method: "POST", form: { username, password } });
+      const r = await request("/users/login", { method: "POST", body: { username, password } });
       return userFromApi(r, username);
     },
     async logout() { return null; }, // no logout endpoint yet
