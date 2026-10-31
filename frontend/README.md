@@ -1,45 +1,50 @@
-# MONO — frontend платформы авторов
+# OpenDonate — frontend
 
-Минималистичный интерфейс на React + Vite. Frontend подключается к FastAPI и загружает/создаёт посты через API.
+React 18 + Vite + React Router + lucide-react. The app runs **entirely without a backend**:
+by default every request goes to a simulated backend stored in `localStorage`.
 
-## Запуск frontend
+## Run
 
 ```bash
+cd frontend
 npm install
-npm run dev
+npm run dev      # http://localhost:5173
+npm run build    # production build into dist/
 ```
 
-Открой адрес Vite (обычно `http://localhost:5173`).
+Demo account (mock mode): `demo` / `demo12345` — or press "Войти как демо-пользователь" on `/login`.
 
-## Backend
+## Mock mode vs real backend
 
-По умолчанию frontend использует `http://127.0.0.1:8000`.
+| Variable | Default | Meaning |
+|---|---|---|
+| `VITE_USE_MOCKS` | `true` | `true` → `src/mocks/*`; `false` → `src/api/real/*` |
+| `VITE_API_URL` | `http://localhost:8000` | Base URL for the real backend |
 
-```bash
-uvicorn backend.app.main:app --reload --port 8000
+Copy `.env.example` to `.env` to change them.
+
+## Structure
+
+```
+src/
+├── api/          config, fetch client, mappers (backend → UI shape), real/ services, index.js (mock/real switch)
+├── mocks/        data.js (seed), db.js (localStorage), services.js (simulated backend, same interface as real/)
+├── hooks/        useAuth, useToast, useAsync, useRequireAuth, usePreferences
+├── layout/       AppLayout (sidebar / right column / mobile nav), AuthLayout, ProtectedRoute, Brand
+├── components/   PostCard, PostForm, ComposerModal, SubscribeModal, TierCard, CreatorCard, Modal, Field, Tabs, States, ...
+├── pages/        Home, Explore, Creator, Subscriptions, Saved, CreatePost, PostDetails, Settings, Login, Register, NotFound
+├── styles/       tokens (light/dark), base, layout, components, pages
+└── utils/        formatting helpers
 ```
 
-- `GET /posts` — загрузка ленты.
-- `POST /posts/posts` — создание поста в соответствии с текущим `router.py` (`prefix="/posts"` и `@router.post("/posts")`).
+UI code only imports from `src/api/index.js` — never from `src/mocks`.
 
-Если изменишь декоратор создания на `@router.post("")`, обнови URL в `src/App.jsx` с `/posts/posts` на `/posts`.
+## Connecting the real backend
 
-Можно задать другой адрес backend через файл `.env`:
+1. Set `VITE_USE_MOCKS=false`.
+2. Implement the service methods in `src/api/real/index.js` (currently wired: `GET/POST /posts`, `POST /users/register`, `POST /users/login`; everything else rejects with a "not supported" error, which the UI shows as a toast / error state).
+3. Adjust `src/api/mappers.js` to the backend response shapes. Cookie auth is already enabled (`credentials: "include"`); use the same hostname (`localhost` or `127.0.0.1`) for the frontend and the API.
 
-```env
-VITE_API_URL=http://127.0.0.1:8000
-```
+## Simulated (needs a real backend later)
 
-## Подключено
-
-- Загрузка постов с backend при открытии страницы.
-- Создание поста с `title` и `content` через FastAPI.
-- Отображение созданного поста сразу после успешного ответа API.
-- Сообщения об ошибках связи с backend.
-- Существующий дизайн и адаптивная навигация сохранены.
-
-## Пока не подключено
-
-- Загрузка изображений на сервер: изображение в форме сейчас только предпросматривается, backend не имеет upload endpoint.
-- Лайки, комментарии, сохранения и подписки пока остаются интерфейсными демо-функциями и не сохраняются в базе.
-- Авторизация и реальные платежи не реализованы.
+Auth and sessions, posts/likes/bookmarks/comments, creator catalog and profiles, subscription tiers and "payments", profile editing. Appearance and notification toggles are intentionally client-only (`localStorage`).
