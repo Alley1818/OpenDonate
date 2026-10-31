@@ -1,5 +1,17 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.concurrency import run_in_threadpool
+from backend.app.db import engine
+from backend.app.models import Base
+from backend.app.auth.user_router import router as user_router
+
+
+
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    yield
 
 from backend.app.router import router as post_router
 from backend.app.auth.user_router import user_router
