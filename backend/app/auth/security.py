@@ -11,8 +11,6 @@ auth_config.JWT_TOKEN_LOCATION = ["cookies"]
 
 security = AuthX(config=auth_config)
 
-
-
 password_hash = PasswordHash.recommended()
 
 

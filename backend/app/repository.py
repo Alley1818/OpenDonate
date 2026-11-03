@@ -1,7 +1,7 @@
 from backend.app.models import Post
 from sqlalchemy import select
 from backend.app.schemas import PostCreate
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 
 class PostRepository:
@@ -18,12 +18,12 @@ class PostRepository:
 
     @classmethod
     def get_posts(cls, db: Session) -> list[Post]:
-        query = select(Post)
+        query = select(Post).options(joinedload(Post.author))
         result = db.execute(query)
         return list(result.scalars().all())
 
     @classmethod
-    def get_post(cls, db: Session, id: int) -> Post:
-        query = select(Post).where(Post.id == id)
-        result = db.execute(query)
-        return result.scalar()
+    def get_post_by_id(cls, db: Session, id: int) -> Post:
+        post_id = int(id)
+        stmt = select(Post).where(Post.id==post_id).options(joinedload(Post.author))
+        return db.execute(stmt).scalar_one_or_none()
