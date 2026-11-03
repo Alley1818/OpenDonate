@@ -19,7 +19,7 @@ class UserRepository:
         db.refresh(user)
 
         token = security.create_access_token(uid=str(user.id))
-        security.set_access_cookies(token, response)
+        security.set_access_cookies(token, response, max_age=86640)
         return {
             "message": "User registered successfully",
             "user": {
@@ -47,3 +47,16 @@ class UserRepository:
                 "email": user.email
             }
         }
+
+    @classmethod
+    def get_user_by_id(cls, id:int, db: Session) -> User | None:
+        stmt = select(User).where(User.id == id)
+        user = db.execute(stmt).scalar_one_or_none()
+        return user
+
+
+    @classmethod
+    def get_by_username(cls, username: str, db: Session) -> User | None:
+        stmt = select(User).where(User.username == username)
+        user = db.execute(stmt).scalar_one_or_none()
+        return user

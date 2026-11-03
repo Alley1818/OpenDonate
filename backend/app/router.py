@@ -20,10 +20,12 @@ def add_post(data: PostCreate, db=Depends(get_db)):
 
 @router.get("")
 def get_posts(db = Depends(get_db)) -> list[PostResponse]:
-   tasks = PostRepository.get_posts(db=db)
-   return tasks
+   posts = PostRepository.get_posts(db=db)
+   return posts
 
 @router.get("/{id}", response_model=PostResponse)
-def get_posts(id ,db = Depends(get_db)) -> list[PostResponse]:
-   tasks = PostRepository.get_posts(id=id, db=db)
-   return tasks
+def get_post_by_id(id ,db = Depends(get_db)) -> list[PostResponse]:
+   post = PostRepository.get_post_by_id(id=id, db=db)
+   if not post:
+       raise HTTPException(status_code=404, detail="Post not found")
+   return post
