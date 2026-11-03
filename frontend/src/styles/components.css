@@ -172,3 +172,41 @@
 .suggested strong { font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .suggested div span { font-size: 12px; color: var(--muted); }
 .suggested:hover strong { text-decoration: underline; }
+
+.me-loading {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 64px;
+}
+
+.avatar-skeleton {
+  width: 64px;
+  height: 64px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--soft-2);
+  animation: pulse 1.2s ease-in-out infinite;
+}
+
+.profile-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.profile-skeleton span {
+  display: block;
+  height: 12px;
+  border-radius: 6px;
+  background: var(--soft-2);
+  animation: pulse 1.2s ease-in-out infinite;
+}
+
+.profile-skeleton span:first-child {
+  width: 90px;
+}
+
+.profile-skeleton span:last-child {
+  width: 70px;
+}

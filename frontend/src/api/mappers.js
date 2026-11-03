@@ -11,6 +11,7 @@ export function userFromApi(raw, fallbackUsername = "user") {
     displayName: raw?.display_name || username,
     bio: raw?.bio || "",
     color: colorFor(username),
+    tiers: raw?.tiers || []
   };
 }
 
@@ -23,7 +24,7 @@ export function postFromApi(raw) {
     author: {
       id: authorId,
       username,
-      displayName: raw.author?.display_name || `Автор #${authorId}`,
+      displayName: raw.author?.display_name || username,
       color: colorFor(username),
       verified: false,
     },
