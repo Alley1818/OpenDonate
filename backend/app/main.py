@@ -7,13 +7,9 @@ from backend.app.auth.user_router import user_router
 
 
 
-
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     yield
-
-
 
 
 app = FastAPI()

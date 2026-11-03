@@ -1,3 +1,5 @@
+from authx import TokenPayload
+from .security import auth_config, security
 from fastapi import APIRouter, Depends, Response
 from backend.app.db import get_db
 from backend.app.schemas import UserCreate, UserLogin
@@ -16,3 +18,11 @@ def register_post(data: UserCreate, response: Response, db = Depends(get_db)):
 @user_router.post("/login", status_code=200)
 def login(creds: UserLogin, response: Response, db = Depends(get_db)):
     return UserRepository.login(creds=creds, db=db, response=response)
+
+@user_router.post("/me", status_code=200)
+def get_me(payload: TokenPayload = Depends(security.access_token_required)):
+    return {
+        "user_id": payload.sub,
+        "token_type": payload.type,
+        "is_fresh": payload.fresh,
+    }
