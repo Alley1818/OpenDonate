@@ -19,7 +19,7 @@ app.include_router(post_router)
 app.include_router(user_router)
 app.include_router(creator_router)
 
-
+app.frontend("/", directory="frontend/dist")
 
 app.add_middleware(
     CORSMiddleware,
