@@ -21,3 +21,9 @@ class PostRepository:
         query = select(Post)
         result = db.execute(query)
         return list(result.scalars().all())
+
+    @classmethod
+    def get_post(cls, db: Session, id: int) -> Post:
+        query = select(Post).where(Post.id == id)
+        result = db.execute(query)
+        return result.scalar()
