@@ -25,6 +25,7 @@ def register_post(data: UserCreate, response: Response, db = Depends(get_db)):
 
 @user_router.post("/login", status_code=200)
 def login(creds: UserLogin, response: Response, db = Depends(get_db)):
+<<<<<<< Updated upstream
     return UserRepository.login(
         creds=creds, db=db, response=response
     )
@@ -53,3 +54,6 @@ def get_by_username(
   if not user:
     raise HTTPException(status_code=404, detail="User not found")
   return user
+=======
+    return UserRepository.login(creds=creds, db=db, response=response)
+>>>>>>> Stashed changes
