@@ -1,6 +1,9 @@
-from fastapi import APIRouter, Depends, Response
+from authx import TokenPayload
+from sqlalchemy.orm import Session
+from .security import security
+from fastapi import APIRouter, Depends, Response, HTTPException,status
 from backend.app.db import get_db
-from backend.app.schemas import UserCreate, UserLogin
+from backend.app.schemas import UserCreate, UserLogin, UserResponse
 from backend.app.auth.user_repository import UserRepository
 
 user_router = APIRouter(
@@ -8,27 +11,34 @@ user_router = APIRouter(
     tags=["Users"]
 )
 
+creator_router = APIRouter(
+    prefix="/creators",
+    tags=["Creators"]
+)
+
 @user_router.post("/register", status_code=201)
 def register_post(data: UserCreate, response: Response, db = Depends(get_db)):
-    return UserRepository.create_user(data=data, db=db, response=response)
+    return UserRepository.create_user(
+        data=data, db=db, response=response
+    )
 
 
 @user_router.post("/login", status_code=200)
 def login(creds: UserLogin, response: Response, db = Depends(get_db)):
 <<<<<<< Updated upstream
-    return UserRepository.login(creds=creds, db=db, response=response)
-=======
-    return UserRepository.login(creds=creds, db=db, response=response)
+    return UserRepository.login(
+        creds=creds, db=db, response=response
+    )
 
 
-@user_router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
+@user_router.post("/logout")
 async def logout(response: Response):
     security.unset_cookies(response)
-    return None
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @user_router.get("/me", status_code=200)
-def get_me(payload: TokenPayload = Depends(security.access_token_required), db: Session = Depends(get_db)) -> UserResponse:
+def get_me(payload: TokenPayload = Depends(security.access_token_required), db: Session = Depends(get_db)):
     id = int(payload.sub)
     user = UserRepository.get_user_by_id(id, db=db)
     if user is None:
@@ -44,4 +54,6 @@ def get_by_username(
   if not user:
     raise HTTPException(status_code=404, detail="User not found")
   return user
+=======
+    return UserRepository.login(creds=creds, db=db, response=response)
 >>>>>>> Stashed changes

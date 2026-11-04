@@ -1,199 +1,112 @@
 # OpenDonate
 
-**An open-source platform for creators to share content and receive support from their audience.**
+Open-source платформа, где авторы публикуют контент и получают поддержку от своей аудитории.
 
-OpenDonate is a creator-support platform inspired by [Boosty](https://boosty.to/) and [Patreon](https://www.patreon.com/). It aims to provide creators with a space to publish content, build a community, and offer exclusive content to their supporters.
+[Changelog](CHANGELOG.md) · [Issues](https://github.com/Alley1818/OpenDonate/issues)
 
-The project is being developed as an open-source alternative with a focus on simplicity, extensibility, and a clean user experience.
+> **Статус:** ранняя разработка. Функции и API могут меняться.
 
-> **Project status:** Under active development. Features and APIs may change.
+## Зачем это нужно
 
-## Overview
+Boosty и Patreon закрыты и доступны не всем авторам. OpenDonate задуман как простая, расширяемая альтернатива, которую можно развернуть у себя: автор сам контролирует свой контент и общение с аудиторией.
 
-OpenDonate is designed around a simple idea: creators should have control over their content and the way they interact with their audience.
+## Возможности
 
-The platform is planned to support:
+**Реализовано**
+- Регистрация и аутентификация пользователей
+- Хеширование паролей (argon2)
+- JWT-авторизация через cookie
+- Создание и получение публикаций
 
-- Creator profiles.
-- Public and exclusive publications.
-- A social feed.
-- Paid subscriptions and creator support.
-- Community interaction.
+**В планах**
+- Публичная и платная видимость публикаций
+- Профили авторов
+- Уровни подписки
+- Интеграция платежей
+- Доступ к эксклюзивному контенту
+- Лайки и комментарии
+- Загрузка медиа
+- Поиск и рекомендации
+- Настройки пользователя
 
-## Features
+Подробности и прогресс смотри в [issues](https://github.com/Alley1818/OpenDonate/issues).
 
-### Implemented
+## Технологии
 
-- User registration.
-- User authentication.
-- Password hashing.
-- JWT-based authentication using cookies.
-- User and publication database models.
-- Creating and retrieving publications.
-- Public and paid publication visibility.
-- Database migrations with Alembic.
+**Backend:** Python 3.11+, FastAPI, SQLAlchemy, PostgreSQL, Alembic, Pydantic, AuthX, pwdlib
+**Frontend:** React 18, Vite, JavaScript, lucide-react
 
-### Planned
+## Структура проекта
 
-- Creator profiles.
-- Subscription tiers.
-- Payment integration.
-- Exclusive content access.
-- Likes and comments.
-- Publication images and media uploads.
-- Search and discovery.
-- User settings.
-
-## Tech Stack
-
-### Backend
-
-- Python 3.11+
-- FastAPI
-- SQLAlchemy
-- PostgreSQL
-- Alembic
-- Pydantic
-- AuthX
-- pwdlib
-
-### Frontend
-
-- React 18
-- Vite
-- JavaScript
-- lucide-react
-
-## Project Structure
-
-```text
+```
 OpenDonate/
-├── backend/
-│   └── app/
-│       ├── auth/
-│       ├── main.py
-│       ├── models.py
-│       ├── schemas.py
-│       ├── router.py
-│       ├── repository.py
-│       ├── db.py
-│       └── config.py
-│
-├── frontend/
-│   ├── src/
-│   ├── public/
-│   ├── package.json
-│   └── vite.config.js
-│
-├── migrations/
-├── alembic.ini
-├── pyproject.toml
-└── README.md
+├── <актуальная структура>
 ```
 
-## Getting Started
+## Быстрый старт
 
-### Prerequisites
+### Требования
+- Python 3.11+
+- PostgreSQL
+- Node.js и npm
+- Git
 
-Make sure you have installed:
-
-- Python 3.11 or newer.
-- PostgreSQL.
-- Node.js and npm.
-- Git.
-
-### 1. Clone the repository
-
+### 1. Клонируй репозиторий
 ```bash
 git clone https://github.com/Alley1818/OpenDonate.git
 cd OpenDonate
 ```
 
-### 2. Set up the backend
-
-Create and activate a virtual environment:
-
+### 2. Установи зависимости бэкенда
+```bash
+uv sync
+```
+или через pip:
 ```bash
 python -m venv .venv
 source .venv/bin/activate
-```
-
-Install the project dependencies:
-
-```bash
 pip install -e .
 ```
 
-### 3. Configure environment variables
-
-Create a `.env` file in the project root:
-
-```env
+### 3. Настрой переменные окружения
+Скопируй пример и заполни своими значениями:
+```bash
+cp .env.example .env
+```
+```
 DATABASE_URL=postgresql+psycopg://username:password@localhost:5432/opendonate
 SECRET_KEY=your-secret-key
 ```
+Никогда не коммить `.env` и не публикуй секретный ключ.
 
-Replace the database credentials with your own values.
-
-Do not commit `.env` or expose your secret key.
-
-### 4. Run database migrations
-
+### 4. Примени миграции
 ```bash
 alembic upgrade head
 ```
 
-### 5. Start the backend
-
+### 5. Запусти бэкенд
 ```bash
-uvicorn backend.app.main:app --reload
+uvicorn <модуль>:app --reload
 ```
+API: http://127.0.0.1:8000 · Документация: http://127.0.0.1:8000/docs
 
-The API will be available at:
-
-```text
-http://127.0.0.1:8000
-```
-
-Interactive API documentation:
-
-```text
-http://127.0.0.1:8000/docs
-```
-
-### 6. Start the frontend
-
-Open another terminal:
-
+### 6. Запусти фронтенд
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
+Фронтенд: http://localhost:5173
 
-The frontend will be available at:
+## Участие в разработке
 
-```text
-http://localhost:5173
-```
+Будем рады помощи. Если планируешь крупные изменения, сначала создай issue и обсуди их.
 
-## Contributing
+1. Сделай fork репозитория
+2. Создай ветку под свою задачу
+3. Внеси изменения и закоммить
+4. Открой pull request
 
-OpenDonate is an open-source project, and contributions are welcome.
+## Лицензия
 
-If you want to contribute:
-
-1. Fork the repository.
-2. Create a feature branch.
-3. Make your changes.
-4. Submit a pull request.
-
-For major changes, consider opening an issue first to discuss the proposed implementation.
-
-## License
-
-The project is currently under development. License information will be added once the licensing terms are finalized.
-
----
-
-**OpenDonate — a platform built to give creators more control over their content and audience.**
+Проект распространяется под лицензией [GNU AGPL-3.0](LICENSE).
