@@ -8,6 +8,9 @@ auth_config.JWT_ALGORITHM = "HS256"
 auth_config.JWT_ACCESS_COOKIE_NAME = "access_token"
 auth_config.JWT_REFRESH_COOKIE_NAME = "refresh_token"
 auth_config.JWT_TOKEN_LOCATION = ["cookies"]
+#auth_config.JWT_COOKIE_CSRF_PROTECT = True
+# auth_config.JWT_COOKIE_SECURE = True
+#auth_config.JWT_COOKIE_HTTPONLY = True
 
 security = AuthX(config=auth_config)
 

@@ -34,6 +34,15 @@ class UserRepository:
         stmt = select(User).where(User.username == creds.username)
         user = db.execute(stmt).scalar_one_or_none()
 
+        print("USERNAME:", creds.username)
+        print("USER FOUND:", user is not None)
+
+        if user:
+            print("PASSWORD VALID:", verify_password(
+                creds.password,
+                user.password_hash
+            ))
+
         if not user or not verify_password(creds.password, user.password_hash):
             raise HTTPException(status_code=401, detail="Incorrect username or password")
 
