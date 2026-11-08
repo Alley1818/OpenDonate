@@ -1,10 +1,12 @@
 from datetime import datetime
+
 from pydantic import BaseModel, ConfigDict
 from backend.app.models import PostVisibility
 
 
 class UserName(BaseModel):
     username: str
+
 
 class UserCreate(BaseModel):
     email: str
@@ -28,12 +30,11 @@ class UserResponse(BaseModel):
 
 
 class AuthorResponse(BaseModel):
-  id: int
-  username: str
-  display_name: str | None = None
+    id: int
+    username: str
+    display_name: str | None = None
 
-  class Config:
-    from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class PostCreate(BaseModel):
@@ -58,7 +59,4 @@ class PostResponse(BaseModel):
     visibility: PostVisibility
     created_at: datetime
     updated_at: datetime
-
-    author: (
-        AuthorResponse
-    )
+    author: AuthorResponse
