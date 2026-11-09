@@ -1,6 +1,5 @@
 from sqlalchemy import select
 from sqlalchemy.orm import Session, joinedload
-
 from backend.app.models import Post
 from backend.app.schemas import PostCreate, PostUpdate
 
@@ -25,10 +24,13 @@ class PostRepository:
         return post
 
     @classmethod
-    def get_posts(cls, db: Session) -> list[Post]:
+    def get_posts(cls, db: Session, limit: int, offset: int) -> list[Post]:
         stmt = (
             select(Post)
             .options(joinedload(Post.author))
+            .order_by(Post.created_at.desc(),Post.id.desc())
+            .limit(limit)
+            .offset(offset)
         )
 
         result = db.execute(stmt)

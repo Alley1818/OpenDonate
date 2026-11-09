@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from authx import TokenPayload
-
+from fastapi import Query
 from backend.app.repository import PostRepository
 from backend.app.schemas import (
     PostCreate,
@@ -31,10 +31,14 @@ def add_post(
     return post
 
 
-@router.get("", response_model=list[PostResponse])
-def get_posts(db=Depends(get_db)):
-    posts = PostRepository.get_posts(db=db)
-
+@router.get("", response_model=list[PostResponse], status_code=200)
+def get_posts(db=Depends(get_db),  offset: int = Query(0, ge=0),
+              limit: int = Query(10, ge=1, le=100),):
+    posts = PostRepository.get_posts(
+        limit=limit,
+        offset=offset,
+        db=db,
+    )
     return posts
 
 
