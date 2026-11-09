@@ -60,3 +60,10 @@ class PostResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
     author: AuthorResponse
+
+
+class CreatorUpdate(BaseModel):
+    display_name: str | None
+    bio: str | None
+    avatar_url: str | None
+    website_url: str | None

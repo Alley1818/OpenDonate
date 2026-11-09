@@ -2,7 +2,7 @@ from fastapi import HTTPException, Response
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from backend.app.models import User
-from backend.app.schemas import UserCreate, UserLogin
+from backend.app.schemas import UserCreate, UserLogin, CreatorUpdate
 from backend.app.auth.security import hash_password, verify_password, security
 
 
@@ -59,4 +59,21 @@ class UserRepository:
     def get_by_username(cls, username: str, db: Session) -> User | None:
         stmt = select(User).where(User.username == username)
         user = db.execute(stmt).scalar_one_or_none()
+        return user
+
+    @classmethod
+    def edit_profile(cls, id: int, db: Session, data: CreatorUpdate) -> User | None:
+        stmt = select(User).where(User.id == id)
+        user = db.execute(stmt).scalar_one_or_none()
+
+        if user is None:
+            return None
+
+        update_data = data.model_dump(exclude_unset=True)
+
+        for field, value in update_data.items():
+            setattr(user, field, value)
+
+        db.commit()
+        db.refresh(user)
         return user

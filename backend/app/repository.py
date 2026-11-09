@@ -58,14 +58,8 @@ class PostRepository:
         db: Session
     ) -> Post | None:
 
-        stmt = (
-            select(Post)
-            .where(
-                Post.id == id,
-                Post.author_id == author_id
-            )
-            .options(joinedload(Post.author))
-        )
+        stmt = (select(Post).where(Post.id == id,Post.author_id == author_id)
+                .options(joinedload(Post.author)))
 
         post = db.execute(stmt).scalar_one_or_none()
 

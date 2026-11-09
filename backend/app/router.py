@@ -61,9 +61,7 @@ def get_post_by_id(
 def change_post(
     id: int,
     data: PostUpdate,
-    payload: TokenPayload = Depends(
-        security.access_token_required
-    ),
+    payload: TokenPayload = Depends(security.access_token_required),
     db=Depends(get_db)
 ):
     author_id = int(payload.sub)

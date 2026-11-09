@@ -26,6 +26,9 @@ class User(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
+    bio: Mapped[str | None] = mapped_column(Text)
+    avatar_url: Mapped[str | None] = mapped_column(String(255))
+    website_url: Mapped[str | None] = mapped_column(String(255))
 
     posts: Mapped[list["Post"]] = relationship(back_populates="author")
 
