@@ -1,4 +1,5 @@
 from fastapi import HTTPException, Response
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from backend.app.models import User
@@ -14,9 +15,16 @@ class UserRepository:
             username=data.username,
             password_hash=hash_password(data.password),
         )
-        db.add(user)
-        db.commit()
-        db.refresh(user)
+        try:
+            db.add(user)
+            db.commit()
+            db.refresh(user)
+        except IntegrityError:
+            db.rollback()
+            raise HTTPException(
+                status_code=409,
+                detail="Email or username already exists",
+            )
 
         token = security.create_access_token(uid=str(user.id))
         security.set_access_cookies(token, response, max_age=86640)
