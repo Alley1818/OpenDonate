@@ -1,15 +1,13 @@
 from io import BytesIO
 from pathlib import Path
 import uuid
-
 from PIL import Image, UnidentifiedImageError
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 UPLOAD_DIR = PROJECT_ROOT / "uploads" / "posts"
-
 ALLOWED_FORMATS = {"JPEG", "PNG", "WEBP"}
-
+MAX_IMAGE_SIZE = 5 * 1024 * 1024  # 5 MB
 
 def validate_image(file_bytes: bytes) -> bool:
     try:
@@ -23,6 +21,10 @@ def validate_image(file_bytes: bytes) -> bool:
 
     except (UnidentifiedImageError, OSError):
         return False
+
+
+def validate_image_size(file_bytes: bytes) -> bool:
+    return len(file_bytes) <= MAX_IMAGE_SIZE
 
 
 def generate_filename(image_format: str) -> str:

@@ -1,6 +1,8 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from authx import TokenPayload
 from fastapi import Query
+from sqlalchemy.orm import Session
+
 from backend.app.repository import PostRepository
 from backend.app.schemas import (
     PostCreate,
@@ -9,7 +11,11 @@ from backend.app.schemas import (
 )
 from backend.app.db import get_db
 from backend.app.auth.security import security
-
+from backend.app.services.image_upload import (
+    validate_image_size,
+    validate_image,
+    MAX_IMAGE_SIZE
+)
 
 router = APIRouter(
     prefix="/posts",
@@ -98,3 +104,47 @@ def change_post(
         )
 
     return post
+
+
+@router.post("/posts/{post_id}/images")
+async def upload_images(
+    post_id: int,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    payload: TokenPayload = Depends(security.access_token_required),
+):
+    author_id = int(payload.sub)
+
+    file_bytes = await file.read(MAX_IMAGE_SIZE + 1)
+
+    if not validate_image_size(file_bytes):
+        raise HTTPException(
+            status_code=413,
+            detail="File size exceeds 5 MB",
+        )
+
+    if not validate_image(file_bytes):
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid image format",
+        )
+
+    image = PostRepository.upload_image(
+        post_id=post_id,
+        file_bytes=file_bytes,
+        author_id=author_id,
+        db=db,
+    )
+
+    if image is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Post not found",
+        )
+
+    return {
+        "id": image.id,
+        "post_id": image.post_id,
+        "file_path": image.file_path,
+        "created_at": image.created_at,
+    }
