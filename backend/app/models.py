@@ -43,6 +43,10 @@ class Post(Base):
     )
     title: Mapped[str] = mapped_column(String(200))
     content: Mapped[str] = mapped_column(Text)
+    images: Mapped[list["PostImage"]] = relationship(
+        back_populates="post",
+        cascade="all, delete-orphan",
+    )
     visibility: Mapped[PostVisibility] = mapped_column(
         Enum(PostVisibility, native_enum=False, length=20),
         default=PostVisibility.public,
@@ -55,3 +59,21 @@ class Post(Base):
     )
 
     author: Mapped[User] = relationship(back_populates="posts")
+
+
+class PostImage(Base):
+    __tablename__ = "post_images"
+    __table_args__ = (
+        Index("ix_post_images_post_id_created_at", "post_id", "created_at"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    post_id: Mapped[int] = mapped_column(
+        ForeignKey("posts.id", ondelete="CASCADE")
+    )
+    file_path: Mapped[str] = mapped_column(String(255))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+    )
+    post: Mapped["Post"] = relationship(back_populates="images")

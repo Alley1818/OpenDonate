@@ -22,6 +22,8 @@ posts.db
 
 node_modules
 
+uploads/
+
 alembic.ini
 
 frontend/dist/
