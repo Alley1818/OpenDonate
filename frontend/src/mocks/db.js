@@ -22,7 +22,7 @@ export const readDb = () => load();
 export function writeDb(mutator) {
   const state = load();
   const result = mutator(state);
-  try { localStorage.setItem(KEY, JSON.stringify(state)); } catch { /* storage unavailable */ }
+  try { localStorage.setItem(KEY, JSON.stringify(state)); } catch { /* uploads unavailable */ }
   return result;
 }
 
