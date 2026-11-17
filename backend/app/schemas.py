@@ -67,3 +67,12 @@ class CreatorUpdate(BaseModel):
     bio: str | None
     avatar_url: str | None
     website_url: str | None
+
+
+class PostLikeResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    post_id: int
+    user_id: int
+    created_at: datetime

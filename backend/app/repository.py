@@ -1,13 +1,11 @@
 from fastapi import HTTPException
-from sqlalchemy import select
-from sqlalchemy.orm import Session, joinedload
-from backend.app.models import Post, PostImage
+from sqlalchemy.orm import joinedload
+from backend.app import db
 from backend.app.schemas import PostCreate, PostUpdate
-from sqlalchemy import select, func
+from sqlalchemy import select, func, delete
 from sqlalchemy.orm import Session
-
-from backend.app.models import Post, PostImage
-from backend.app.services.image_service import save_image, UPLOAD_DIR
+from backend.app.models import Post, PostImage, PostLike
+from backend.app.services.image_upload import save_image, UPLOAD_DIR
 
 class PostRepository:
 
@@ -139,3 +137,58 @@ class PostRepository:
             raise
 
         return image
+
+    @classmethod
+    def add_like(
+            cls,
+            post_id: int,
+            user_id: int,
+            db: Session,
+    ):
+        post = db.get(Post, post_id)
+
+        if post is None:
+            return None
+
+        existing_like = db.scalar(
+            select(PostLike).where(
+                PostLike.post_id == post_id,
+                PostLike.user_id == user_id,
+            )
+        )
+
+        if existing_like:
+            return existing_like
+
+        post_like = PostLike(
+            post_id=post_id,
+            user_id=user_id,
+        )
+
+        db.add(post_like)
+        db.commit()
+        db.refresh(post_like)
+
+        return post_like
+
+    @classmethod
+    def delete_like(
+            cls,
+            post_id: int,
+            user_id: int,
+            db: Session,
+    ):
+        post = db.get(Post, post_id)
+
+        if post is None:
+            return None
+
+        stmt = delete(PostLike).where(
+            PostLike.post_id == post_id,
+            PostLike.user_id == user_id,
+        )
+
+        result = db.execute(stmt)
+        db.commit()
+
+        return result.rowcount > 0

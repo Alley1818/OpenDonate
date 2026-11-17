@@ -7,7 +7,7 @@ from backend.app.repository import PostRepository
 from backend.app.schemas import (
     PostCreate,
     PostUpdate,
-    PostResponse
+    PostResponse, PostLikeResponse
 )
 from backend.app.db import get_db
 from backend.app.auth.security import security
@@ -148,3 +148,56 @@ async def upload_images(
         "file_path": image.file_path,
         "created_at": image.created_at,
     }
+
+@router.post(
+    "/posts/{post_id}/likes",
+    response_model=PostLikeResponse,
+)
+def like_post(
+    post_id: int,
+    payload: TokenPayload = Depends(security.access_token_required),
+    db: Session = Depends(get_db),
+):
+    user_id = int(payload.sub)
+
+    like = PostRepository.add_like(
+        post_id=post_id,
+        user_id=user_id,
+        db=db,
+    )
+
+    if like is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Post not found",
+        )
+
+    return like
+
+@router.delete("/posts/{post_id}/likes")
+def delete_like(
+    post_id: int,
+    payload: TokenPayload = Depends(security.access_token_required),
+    db: Session = Depends(get_db),
+):
+    user_id = int(payload.sub)
+
+    like = PostRepository.delete_like(
+        post_id=post_id,
+        user_id=user_id,
+        db=db,
+    )
+
+    if like is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Post not found",
+        )
+
+    if like is False:
+        raise HTTPException(
+            status_code=404,
+            detail="Like not found",
+        )
+
+    return {"message": "Like removed successfully"}
