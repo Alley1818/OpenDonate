@@ -1,7 +1,7 @@
 import enum
 from datetime import datetime
 
-from sqlalchemy import DateTime, Enum, ForeignKey, Index, String, Text, func
+from sqlalchemy import DateTime, Enum, ForeignKey, Index, String, Text, func, UniqueConstraint
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
@@ -77,3 +77,25 @@ class PostImage(Base):
         server_default=func.now(),
     )
     post: Mapped["Post"] = relationship(back_populates="images")
+
+class PostLike(Base):
+    __tablename__ = "post_likes"
+    __table_args__ = (
+        Index("ix_post_likes_post_id_created_at", "post_id", "created_at"),
+        UniqueConstraint("post_id", "user_id", name="uq_post_likes_post_user"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+
+    post_id: Mapped[int] = mapped_column(
+        ForeignKey("posts.id", ondelete="CASCADE"),
+    )
+
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"),
+    )
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+    )
