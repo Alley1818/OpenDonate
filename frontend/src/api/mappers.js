@@ -10,14 +10,17 @@ export function userFromApi(raw, fallbackUsername = "user") {
     username,
     displayName: raw?.display_name || username,
     bio: raw?.bio || "",
+    avatarUrl: raw?.avatar_url || "",
+    websiteUrl: raw?.website_url || "",
     color: colorFor(username),
     tiers: raw?.tiers || []
   };
 }
 
-export function postFromApi(raw) {
+export function postFromApi(raw, userId) {
   const authorId = raw.author_id;
   const username = raw.author?.username || `user${authorId}`;
+  const locked = raw.visibility === "paid" && String(authorId) !== String(userId);
   return {
     id: raw.id,
     authorId,
@@ -29,13 +32,13 @@ export function postFromApi(raw) {
       verified: false,
     },
     title: raw.title,
-    content: raw.content,
+    content: locked ? "" : raw.content,
     visibility: raw.visibility,
     createdAt: raw.created_at,
     liked: false,
     bookmarked: false,
     likes: 0,
     comments: 0,
-    locked: false,
+    locked,
   };
 }

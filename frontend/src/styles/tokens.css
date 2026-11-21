@@ -1,33 +1,66 @@
+@font-face {
+  font-family: "VK Sans Display";
+  src: url("../assets/vk-sans-display-medium.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+}
+
+/* VK Blue and the vkCom/vkComDark web palette. */
 :root {
-  --ink: #111111;
-  --on-ink: #ffffff;
+  --canvas: #edeef0;
   --bg: #ffffff;
-  --soft: #f7f7f7;
-  --soft-2: #f0f0f0;
-  --line: #e5e5e5;
-  --muted: #777777;
-  --accent: #ff7a24;
-  --accent-hover: #e96a18;
-  --on-accent: #111111;
-  --accent-soft: #fff1e8;
-  --danger: #c93a3a;
-  --success: #2e8b57;
-  --overlay: rgba(17, 17, 17, 0.45);
+  --ink: #000000;
+  --on-ink: #ffffff;
+  --soft: #f7f8fa;
+  --soft-2: #f0f2f5;
+  --line: #dce1e6;
+  --muted: #626d7a;
+  --accent: #0077ff;
+  /* A slightly darker blue for contrast with small white button labels. */
+  --primary: #006fee;
+  --primary-hover: #0064d6;
+  --on-accent: #ffffff;
+  --accent-soft: #e5ebf1;
+  --ink-accent: #2a5885;
+  --hero: #e5ebf1;
+  --brand-dot: #99d3ff;
+  --danger: #cc2929;
+  --success: #1b7a1b;
+  --overlay: rgba(44, 45, 46, 0.5);
   --radius: 12px;
-  --font: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --font-display: "Manrope", "DM Sans", sans-serif;
+  --font: -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", Geneva,
+    "Noto Sans Armenian", "Noto Sans Bengali", "Noto Sans Cherokee", "Noto Sans Devanagari",
+    "Noto Sans Ethiopic", "Noto Sans Georgian", "Noto Sans Hebrew", "Noto Sans Kannada",
+    "Noto Sans Khmer", "Noto Sans Lao", "Noto Sans Osmanya", "Noto Sans Tamil",
+    "Noto Sans Telugu", "Noto Sans Thai", Arial, Tahoma, Verdana, sans-serif;
+  --font-display: "VK Sans Display", "VK Sans Display Faux", var(--font);
+  --font-article: "VK Sans Text", var(--font);
+  --reading-size: 18px;
   color-scheme: light;
 }
+
 :root[data-theme="dark"] {
-  --ink: #f4f4f4;
-  --on-ink: #111111;
-  --bg: #111111;
-  --soft: #181818;
-  --soft-2: #222222;
-  --line: #2c2c2c;
-  --muted: #9b9b9b;
-  --accent-soft: #2a1a10;
-  --danger: #ef7070;
+  --canvas: #141414;
+  --bg: #222222;
+  --ink: #e1e3e6;
+  --on-ink: #222222;
+  --soft: #292929;
+  --soft-2: #333333;
+  --line: #363738;
+  --muted: #939393;
+  --accent: #71aaeb;
+  --primary: #e1e3e6;
+  --primary-hover: #cccccc;
+  --on-accent: #222222;
+  --accent-soft: #1d3a5c;
+  --ink-accent: #71aaeb;
+  --hero: #292929;
+  --brand-dot: #224b7a;
+  --danger: #ff5c5c;
+  --success: #4bb34b;
   --overlay: rgba(0, 0, 0, 0.65);
   color-scheme: dark;
 }
+
+:root[data-reading-size="large"] { --reading-size: 22px; }

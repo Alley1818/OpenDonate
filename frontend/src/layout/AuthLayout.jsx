@@ -8,7 +8,7 @@ export default function AuthLayout() {
         <Brand />
         <Outlet />
       </div>
-      <p className="auth-foot">© 2026 OpenDonate · Открытая платформа для авторов</p>
+      <p className="auth-foot">© 2026 OpenDonate</p>
     </div>
   );
 }

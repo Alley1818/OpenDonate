@@ -4,10 +4,10 @@ import { BrowserRouter } from "react-router-dom";
 import App from "./App.jsx";
 import { AuthProvider } from "./hooks/useAuth.jsx";
 import { ToastProvider } from "./hooks/useToast.jsx";
-import { applyPreferences } from "./hooks/usePreferences.js";
+import { initializePreferences } from "./hooks/usePreferences.js";
 import "./styles/index.css";
 
-applyPreferences();
+initializePreferences();
 
 createRoot(document.getElementById("root")).render(
   <React.StrictMode>

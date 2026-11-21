@@ -1,57 +1,139 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
-import { Inbox, Users } from "lucide-react";
-import PageHeader from "../components/PageHeader.jsx";
-import Tabs from "../components/Tabs.jsx";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Link, useOutletContext, useSearchParams } from "react-router-dom";
+import { ArrowUpRight, Inbox, Plus, Search, SearchX, X } from "lucide-react";
+import journalCover from "../assets/journal-cover.webp";
+import { isAuthor } from "../api/config.js";
 import Avatar from "../components/Avatar.jsx";
-import PostCard from "../components/PostCard.jsx";
-import ComposerModal from "../components/ComposerModal.jsx";
-import { EmptyState, ErrorState, PostSkeletons } from "../components/States.jsx";
-import { api } from "../api/index.js";
+import PageHeader from "../components/PageHeader.jsx";
+import PostResults from "../components/PostResults.jsx";
 import { useAuth } from "../hooks/useAuth.jsx";
-import { useAsync } from "../hooks/useAsync.js";
-import { useRequireAuth } from "../hooks/useRequireAuth.js";
+import { postContentText } from "../utils/postContent.js";
 
 const FILTERS = [
   { value: "all", label: "Все" },
-  { value: "following", label: "Подписки" },
   { value: "public", label: "Открытые" },
   { value: "paid", label: "Платные" },
 ];
 
-export default function Home() {
-  const { user } = useAuth();
-  const guard = useRequireAuth();
-  const [filter, setFilter] = useState("all");
-  const [composer, setComposer] = useState(false);
-  const { data, loading, error, reload, setData } = useAsync(() => api.posts.list({ filter }), [filter, user?.id]);
+const normalize = (value) => value.toLocaleLowerCase("ru-RU").replaceAll("ё", "е");
 
-  const update = (next) => setData((list) => list.map((p) => (p.id === next.id ? next : p)));
-  const created = (post) => {
-    if (filter === "all" || filter === "following" || filter === post.visibility) setData((list) => [post, ...(list || [])]);
+function JournalHeader({ author, canPublish }) {
+  return (
+    <header className="journal-hero">
+      <div className="journal-intro">
+        {author && (
+          <div className="journal-byline">
+            <Avatar user={author} size={36} />
+            <div><strong>{author.displayName}</strong><span>@{author.username}</span></div>
+          </div>
+        )}
+        <h1>Публикации</h1>
+        {author?.bio && <p className="journal-bio">{author.bio}</p>}
+        {canPublish ? (
+          <Link className="btn btn-primary" to="/new"><Plus size={17} aria-hidden="true" /> Написать</Link>
+        ) : (
+          <Link className="btn btn-primary" to="/author">Об авторе <ArrowUpRight size={17} aria-hidden="true" /></Link>
+        )}
+      </div>
+      <img className="journal-cover" src={journalCover} alt="" width="960" height="960" fetchPriority="high" />
+    </header>
+  );
+}
+
+function FeedSearch({ query, onSearch }) {
+  const [draft, setDraft] = useState(query);
+  const input = useRef(null);
+  useEffect(() => setDraft(query), [query]);
+
+  const submit = (event) => {
+    event.preventDefault();
+    const value = draft.trim();
+    setDraft(value);
+    onSearch(value);
+  };
+
+  const clear = () => {
+    setDraft("");
+    onSearch("");
+    input.current?.focus();
   };
 
   return (
-    <>
-      <PageHeader title="Лента" subtitle="Публикации авторов, которых вы читаете" />
-      <section className="composer-card">
-        {user ? <Avatar user={user} size={42} /> : <span className="avatar-placeholder" />}
-        <button className="composer-trigger" onClick={guard(() => setComposer(true))}>
-          {user ? "Что нового? Поделитесь с аудиторией…" : "Войдите, чтобы создавать публикации"}
-        </button>
-        <button className="btn btn-primary btn-sm" onClick={guard(() => setComposer(true))}>Создать</button>
-      </section>
-      <Tabs label="Фильтры ленты" items={FILTERS} value={filter} onChange={setFilter} />
+    <form className="publication-search" role="search" aria-label="Поиск публикаций" onSubmit={submit}>
+      <div className="search-box">
+        <Search size={18} aria-hidden="true" />
+        <input ref={input} type="search" value={draft} onChange={(event) => setDraft(event.target.value)} placeholder="Заголовок или текст" aria-label="Поиск по публикациям" />
+        {(draft || query) && <button type="button" className="icon-btn search-clear" onClick={clear} aria-label="Очистить поиск"><X size={16} aria-hidden="true" /></button>}
+      </div>
+      <button type="submit" className="btn btn-primary">Найти</button>
+    </form>
+  );
+}
 
-      {loading ? <PostSkeletons /> : error ? <ErrorState error={error} onRetry={reload} /> : data?.length ? (
-        <div>{data.map((p) => <PostCard key={p.id} post={p} onChange={update} />)}</div>
-      ) : filter === "following" ? (
-        <EmptyState icon={Users} title="Пока нет публикаций" text={user ? "Подпишитесь на авторов, и их публикации появятся здесь." : "Войдите и подпишитесь на авторов, чтобы видеть их публикации."}
-          action={<Link className="btn btn-secondary" to={user ? "/explore" : "/login"}>{user ? "Найти авторов" : "Войти"}</Link>} />
-      ) : (
-        <EmptyState icon={Inbox} title="Лента пуста" text="Публикаций с таким фильтром пока нет." action={<button className="btn btn-secondary" onClick={() => setFilter("all")}>Показать все</button>} />
-      )}
-      <ComposerModal open={composer} onClose={() => setComposer(false)} onCreated={created} />
+export default function Home({ search = false }) {
+  const { user } = useAuth();
+  const { data: author } = useOutletContext();
+  const [params, setParams] = useSearchParams();
+  const query = (params.get("q") ?? "").trim();
+  const rawFilter = params.get("filter");
+  const filter = FILTERS.some(({ value }) => value === rawFilter) ? rawFilter : "all";
+  const filtered = Boolean(query) || filter !== "all";
+
+  const change = (name, value) => {
+    const next = new URLSearchParams(params);
+    if (value) next.set(name, value);
+    else next.delete(name);
+    if (next.toString() !== params.toString()) setParams(next);
+  };
+
+  const reset = () => {
+    const next = new URLSearchParams(params);
+    next.delete("q");
+    next.delete("filter");
+    setParams(next);
+  };
+
+  const match = useMemo(() => {
+    const terms = query ? normalize(query).split(/\s+/) : [];
+    return (post) => {
+      if (!isAuthor(post.authorId) || (filter !== "all" && post.visibility !== filter)) return false;
+      if (!terms.length) return true;
+      const text = normalize(`${post.title} ${post.locked ? "" : postContentText(post.content)}`);
+      return terms.every((term) => text.includes(term));
+    };
+  }, [filter, query]);
+
+  const empty = filtered ? {
+    icon: SearchX,
+    title: "Публикации не найдены",
+    text: "Попробуйте другой запрос или фильтр.",
+    action: <button type="button" className="btn btn-secondary" onClick={reset}>Сбросить фильтры</button>,
+  } : { icon: Inbox, title: "Публикаций пока нет" };
+
+  return (
+    <>
+      {search ? <PageHeader title="Поиск" subtitle="По заголовкам и тексту публикаций" /> : <JournalHeader author={author} canPublish={isAuthor(user?.id)} />}
+      <section className="publication-feed" aria-label="Список публикаций">
+        <div className="publication-tools">
+          {!search && <h2>Последние записи</h2>}
+          <FeedSearch query={query} onSearch={(value) => change("q", value)} />
+          <div className="chips" role="group" aria-label="Фильтры публикаций">
+            {FILTERS.map(({ value, label }) => (
+              <button key={value} className={`chip ${value === filter ? "selected" : ""}`} type="button" aria-pressed={value === filter} onClick={() => change("filter", value === "all" ? "" : value)}>
+                {label}
+              </button>
+            ))}
+          </div>
+          {query && <p className="publication-query muted small" role="status">Результаты по запросу «{query}»</p>}
+        </div>
+        <PostResults
+          key={JSON.stringify([user?.id, filter, query])}
+          userId={user?.id}
+          match={match}
+          empty={empty}
+          moreLabel={query ? "Искать дальше" : undefined}
+        />
+      </section>
     </>
   );
 }

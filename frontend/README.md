@@ -1,50 +1,45 @@
-# OpenDonate — frontend
+# OpenDonate · фронтенд
 
-React 18 + Vite + React Router + lucide-react. The app runs **entirely without a backend**:
-by default every request goes to a simulated backend stored in `localStorage`.
+Каждая установка OpenDonate — сайт одного автора. У него есть страница, лента и редактор публикаций. Читатели могут зарегистрироваться, поставить отметку «Нравится» или сохранить публикацию в закладки.
 
-## Run
+## Запуск
+
+Из корня репозитория:
 
 ```bash
-cd frontend
-npm install
-npm run dev      # http://localhost:5173
-npm run build    # production build into dist/
+npm --prefix frontend install
+npm --prefix frontend run dev
+npm --prefix frontend run build
 ```
 
-Demo account (mock mode): `demo` / `demo12345` — or press "Войти как демо-пользователь" on `/login`.
+Vite открывает интерфейс на `http://localhost:5173` и проксирует `/api` на FastAPI по адресу `http://127.0.0.1:8000`. Сборка записывается в `frontend/dist`. При размещении сборки настройте прокси для `/api/*`, который убирает префикс перед передачей запроса в FastAPI.
 
-## Mock mode vs real backend
-
-| Variable | Default | Meaning |
+| Переменная | По умолчанию | Назначение |
 |---|---|---|
-| `VITE_USE_MOCKS` | `true` | `true` → `src/mocks/*`; `false` → `src/api/real/*` |
-| `VITE_API_URL` | `http://localhost:8000` | Base URL for the real backend |
+| `VITE_API_URL` | `/api` | Адрес или префикс FastAPI |
+| `VITE_AUTHOR_USERNAME` | пусто | Имя аккаунта автора. Позволяет показать страницу автора до первой публикации |
+| `VITE_USE_MOCKS` | `false` | `true` запускает демо без FastAPI |
 
-Copy `.env.example` to `.env` to change them.
+Переменные можно задать в `frontend/.env`. При прямом подключении к API на другом порту используйте один hostname для интерфейса и API, например `localhost`. Для отдельного домена API нужна соответствующая конфигурация CORS и cookie.
 
-## Structure
+Демо запускается командой `VITE_USE_MOCKS=true npm --prefix frontend run dev`. Аккаунт автора — `demo` / `demo12345`. Для проверки поддержки автора можно зарегистрировать аккаунт читателя в демо.
 
+## Автор и публикации
+
+FastAPI назначает новым публикациям автора с ID `1`. Интерфейс проверяет этот ID для ленты, старых ссылок на профиль и редактора. Если `VITE_AUTHOR_USERNAME` не задан, имя определяется по публикациям владельца. Страница автора доступна по `/author`. Прежняя ссылка `/creators/:username` по-прежнему открывает профиль владельца.
+
+Поиск работает по заголовку и доступному тексту публикаций автора. Лента загружается постранично, запрос и фильтр сохраняются в URL.
+
+Действующие публикации могут содержать обычный текст или сохранённый документ TipTap. Карточки и поиск используют извлечённый текст, страница публикации отображает поддерживаемое форматирование, пустой документ не создаёт видимого текста. Редактор загружает текст. При изменении только заголовка исходный документ сохраняется. Если изменить тело в текстовом редакторе, оно будет сохранено как обычный текст.
+
+На странице публикации показывается примерное время чтения. У текста с несколькими заголовками появляется оглавление со ссылками на разделы. Из статьи можно вернуться к исходному поиску или закладкам. Тема и размер текста хранятся в браузере.
+
+Редактор сохраняет локальный черновик отдельно для новой и каждой существующей публикации. Закрытие редактора и ошибки API сохраняют черновик. Успешное сохранение публикации или явный сброс его очищают.
+
+Закладки хранятся в браузере отдельно для каждого аккаунта. Лайки отправляются на FastAPI, а их активное состояние отражает действия в этом браузере. Уровни поддержки и комментарии доступны в демо. В рабочем режиме редактор создаёт открытые публикации, а интерфейс скрывает текст платных публикаций от читателей.
+
+## Тесты фронтенда
+
+```bash
+node --test frontend/tests/*.test.js
 ```
-src/
-├── api/          config, fetch client, mappers (backend → UI shape), real/ services, index.js (mock/real switch)
-├── mocks/        data.js (seed), db.js (localStorage), services.js (simulated backend, same interface as real/)
-├── hooks/        useAuth, useToast, useAsync, useRequireAuth, usePreferences
-├── layout/       AppLayout (sidebar / right column / mobile nav), AuthLayout, ProtectedRoute, Brand
-├── components/   PostCard, PostForm, ComposerModal, SubscribeModal, TierCard, CreatorCard, Modal, Field, Tabs, States, ...
-├── pages/        Home, Explore, Creator, Subscriptions, Saved, CreatePost, PostDetails, Settings, Login, Register, NotFound
-├── styles/       tokens (light/dark), base, layout, components, pages
-└── utils/        formatting helpers
-```
-
-UI code only imports from `src/api/index.js` — never from `src/mocks`.
-
-## Connecting the real backend
-
-1. Set `VITE_USE_MOCKS=false`.
-2. Implement the service methods in `src/api/real/index.js` (currently wired: `GET/POST /posts`, `POST /users/register`, `POST /users/login`; everything else rejects with a "not supported" error, which the UI shows as a toast / error state).
-3. Adjust `src/api/mappers.js` to the backend response shapes. Cookie auth is already enabled (`credentials: "include"`); use the same hostname (`localhost` or `127.0.0.1`) for the frontend and the API.
-
-## Simulated (needs a real backend later)
-
-Auth and sessions, posts/likes/bookmarks/comments, creator catalog and profiles, subscription tiers and "payments", profile editing. Appearance and notification toggles are intentionally client-only (`localStorage`).

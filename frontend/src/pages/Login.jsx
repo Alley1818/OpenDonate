@@ -26,7 +26,7 @@ export default function Login() {
   const submit = (e) => {
     e.preventDefault();
     const found = {};
-    if (!values.username.trim()) found.username = "Введите email или username";
+    if (!values.username.trim()) found.username = "Введите имя пользователя";
     if (!values.password) found.password = "Введите пароль";
     setErrors(found);
     if (!Object.keys(found).length) attempt(values);
@@ -35,10 +35,10 @@ export default function Login() {
   return (
     <>
       <h1>Вход</h1>
-      <p className="muted">Войдите, чтобы поддерживать авторов и публиковать контент.</p>
+      <p className="muted">Войдите, чтобы ставить отметки «Нравится» и сохранять публикации.</p>
       <form onSubmit={submit} noValidate>
         {formError && <div className="alert alert-error" role="alert">{formError}</div>}
-        <Field id="login-username" label="Email или username" autoComplete="username" value={values.username} onChange={set("username")} error={errors.username} />
+        <Field id="login-username" label={USE_MOCKS ? "Email или имя пользователя" : "Имя пользователя"} autoComplete="username" value={values.username} onChange={set("username")} error={errors.username} />
         <PasswordField id="login-password" label="Пароль" autoComplete="current-password" value={values.password} onChange={set("password")} error={errors.password} />
         <button className="btn btn-primary full" disabled={busy}>{busy ? "Входим…" : "Войти"}</button>
       </form>

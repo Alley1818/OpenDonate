@@ -57,18 +57,19 @@ export function AuthProvider({ children }) {
   }, []);
 
   const logout = useCallback(async () => {
-    try {
-      await api.auth.logout();
-    } finally {
-      setUser(null);
-    }
+    await api.auth.logout();
+    setUser(null);
   }, []);
 
   const updateProfile = useCallback(async (data) => {
-    const updatedUser = await api.profile.update(data);
+    const updatedUser = await api.profile.update({
+      avatarUrl: user?.avatarUrl,
+      websiteUrl: user?.websiteUrl,
+      ...data,
+    });
     setUser(updatedUser);
     return updatedUser;
-  }, []);
+  }, [user]);
 
   const value = useMemo(
     () => ({

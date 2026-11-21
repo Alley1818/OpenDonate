@@ -5,7 +5,8 @@ import PageHeader from "../components/PageHeader.jsx";
 import Tabs from "../components/Tabs.jsx";
 import { Field } from "../components/Field.jsx";
 import { EmptyState } from "../components/States.jsx";
-import { resetDemoData } from "../api/index.js";
+import { ReadingSizeOptions } from "../components/ReadingControls.jsx";
+import { resetDemoData, USE_MOCKS } from "../api/index.js";
 import { useAuth } from "../hooks/useAuth.jsx";
 import { useToast } from "../hooks/useToast.jsx";
 import { usePreferences } from "../hooks/usePreferences.js";
@@ -13,7 +14,7 @@ import { usePreferences } from "../hooks/usePreferences.js";
 const TABS = [
   { value: "profile", label: "Профиль" },
   { value: "appearance", label: "Внешний вид" },
-  { value: "notifications", label: "Уведомления" },
+  ...(USE_MOCKS ? [{ value: "notifications", label: "Уведомления" }] : []),
   { value: "account", label: "Аккаунт" },
 ];
 const THEMES = [{ value: "light", label: "Светлая", icon: Sun }, { value: "dark", label: "Тёмная", icon: Moon }, { value: "system", label: "Системная", icon: Monitor }];
@@ -51,6 +52,16 @@ export default function Settings() {
     try { await updateProfile(form); toast("Профиль сохранён", "success"); } catch (err) { setError(err.message); } finally { setSaving(false); }
   };
 
+  const signOut = async () => {
+    try {
+      await logout();
+      toast("Вы вышли из аккаунта");
+      navigate("/");
+    } catch (error) {
+      toast(error.message, "error");
+    }
+  };
+
   return (
     <>
       <PageHeader title="Настройки" subtitle="Профиль, внешний вид и аккаунт" />
@@ -78,6 +89,10 @@ export default function Settings() {
                 ))}
               </div>
             </fieldset>
+            <fieldset className="visibility">
+              <legend>Размер текста статьи</legend>
+              <ReadingSizeOptions />
+            </fieldset>
             <Switch id="sw-motion" label="Уменьшить анимации" hint="Отключает плавные переходы и анимацию загрузки" checked={prefs.reduceMotion} onChange={(v) => setPrefs({ reduceMotion: v })} />
           </>
         )}
@@ -95,7 +110,7 @@ export default function Settings() {
             <Field id="acc-email" label="Email" value={user.email || "—"} disabled />
             <Field id="acc-username" label="Username" value={`@${user.username}`} disabled />
             <div className="form-actions left">
-              <button className="btn btn-secondary" onClick={async () => { await logout(); toast("Вы вышли из аккаунта"); navigate("/"); }}>Выйти из аккаунта</button>
+              <button className="btn btn-secondary" onClick={signOut}>Выйти из аккаунта</button>
               {resetDemoData && <button className="btn btn-danger-outline" onClick={() => { resetDemoData(); window.location.assign("/"); }}>Сбросить демо-данные</button>}
             </div>
             {resetDemoData && <p className="demo-note">Демо-данные (аккаунты, публикации, подписки) хранятся в localStorage этого браузера.</p>}

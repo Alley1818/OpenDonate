@@ -1,16 +1,21 @@
 import { API_URL } from "./config.js";
 
 export class ApiError extends Error {
-  constructor(message, status = 500) {
+  constructor(message, status = 500, detail) {
     super(message);
     this.name = "ApiError";
     this.status = status;
+    this.detail = detail;
   }
 }
 
 /** Centralized fetch wrapper: base URL, cookies, JSON/form bodies, error normalization. */
 export async function request(path, { method = "GET", body, form, signal } = {}) {
   const headers = {};
+  if (method !== "GET") {
+    const csrf = document.cookie.match(/(?:^|;\s*)csrf_access_token=([^;]+)/)?.[1];
+    if (csrf) headers["X-CSRF-TOKEN"] = csrf;
+  }
   let payload;
   if (form) {
     headers["Content-Type"] = "application/x-www-form-urlencoded";
@@ -22,7 +27,8 @@ export async function request(path, { method = "GET", body, form, signal } = {})
   let res;
   try {
     res = await fetch(`${API_URL}${path}`, { method, headers, body: payload, credentials: "include", signal });
-  } catch {
+  } catch (error) {
+    if (signal?.aborted) throw error;
     throw new ApiError("Нет связи с сервером. Проверьте, что backend запущен.", 0);
   }
   if (!res.ok) {
@@ -31,7 +37,7 @@ export async function request(path, { method = "GET", body, form, signal } = {})
       const json = await res.json();
       detail = typeof json.detail === "string" ? json.detail : JSON.stringify(json.detail ?? "");
     } catch { /* ignore */ }
-    throw new ApiError(detail || `Сервер ответил ${res.status}`, res.status);
+    throw new ApiError(detail || `Сервер ответил ${res.status}`, res.status, detail);
   }
   if (res.status === 204) return null;
   try { return await res.json(); } catch { return null; }

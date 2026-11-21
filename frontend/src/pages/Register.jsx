@@ -23,7 +23,7 @@ export default function Register() {
       <div className="success-state">
         <CheckCircle2 size={44} />
         <h1>Аккаунт создан</h1>
-        <p className="muted">Добро пожаловать, @{user?.username}! Теперь вы можете поддерживать авторов и публиковать свои материалы.</p>
+        <p className="muted">Добро пожаловать, @{user?.username}! Теперь можно сохранять публикации и ставить отметки «Нравится».</p>
         <button className="btn btn-primary full" onClick={() => navigate("/")}>Перейти в ленту</button>
       </div>
     );

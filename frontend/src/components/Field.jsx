@@ -6,8 +6,8 @@ export function Field({ id, label, error, hint, multiline = false, ...rest }) {
   return (
     <div className={`field ${error ? "has-error" : ""}`}>
       <label htmlFor={id}>{label}</label>
-      <Tag id={id} aria-invalid={!!error} aria-describedby={error ? `${id}-err` : undefined} {...rest} />
-      {hint && !error && <p className="hint">{hint}</p>}
+      <Tag id={id} aria-invalid={!!error} aria-describedby={error ? `${id}-err` : hint ? `${id}-hint` : undefined} {...rest} />
+      {hint && !error && <p className="hint" id={`${id}-hint`}>{hint}</p>}
       {error && <p className="field-error" id={`${id}-err`}>{error}</p>}
     </div>
   );

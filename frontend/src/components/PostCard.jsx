@@ -1,31 +1,50 @@
-import { Link } from "react-router-dom";
-import { Bookmark, Check, Heart, Link2, Lock, MessageCircle } from "lucide-react";
+import { useRef, useState } from "react";
+import { Link, useLocation } from "react-router-dom";
+import { ArrowUpRight, Bookmark, Heart, Link2, Lock, MessageCircle } from "lucide-react";
 import Avatar from "./Avatar.jsx";
 import VisibilityBadge from "./VisibilityBadge.jsx";
-import { api } from "../api/index.js";
+import PostContent from "./PostContent.jsx";
+import { api, USE_MOCKS } from "../api/index.js";
+import { useAuth } from "../hooks/useAuth.jsx";
 import { useToast } from "../hooks/useToast.jsx";
 import { useRequireAuth } from "../hooks/useRequireAuth.js";
-import { formatCount, timeAgo } from "../utils/format.js";
+import { formatCount, formatDate } from "../utils/format.js";
+import { postContentText } from "../utils/postContent.js";
 
 export default function PostCard({ post, onChange, detail = false }) {
   const { toast } = useToast();
+  const { user, loading } = useAuth();
   const guard = useRequireAuth();
+  const location = useLocation();
+  const pending = useRef(false);
+  const [busy, setBusy] = useState(false);
   const { author } = post;
+  const locked = post.locked || (!USE_MOCKS && post.visibility === "paid" && String(post.authorId) !== String(user?.id));
+  const visibleContent = locked && !USE_MOCKS ? "" : post.content;
+  const text = detail ? "" : postContentText(visibleContent).replace(/\s+/g, " ").trim();
+  const published = post.createdAt && Number.isFinite(Date.parse(post.createdAt)) ? formatDate(post.createdAt) : "";
+  const postPath = `/posts/${post.id}`;
+  const returnTo = location.pathname + location.search + location.hash;
 
-  const run = (fn, message) => guard(async () => {
+  const run = (action, message) => guard(async () => {
+    if (pending.current) return;
+    pending.current = true;
+    setBusy(true);
     try {
-      const next = await fn(post.id);
+      const next = await action(post.id, { userId: user.id, post });
       onChange?.(next);
       if (message) toast(message(next), "success");
-    } catch (e) {
-      toast(e.message, "error");
+    } catch (error) {
+      toast(error.message, "error");
+    } finally {
+      pending.current = false;
+      setBusy(false);
     }
   });
-  const like = run(api.posts.toggleLike);
-  const bookmark = run(api.posts.toggleBookmark, (n) => (n.bookmarked ? "Добавлено в сохранённое" : "Удалено из сохранённого"));
+
   const share = async () => {
     try {
-      await navigator.clipboard.writeText(`${window.location.origin}/posts/${post.id}`);
+      await navigator.clipboard.writeText(new URL(postPath, window.location.href).href);
       toast("Ссылка скопирована", "success");
     } catch {
       toast("Не удалось скопировать ссылку", "error");
@@ -35,37 +54,41 @@ export default function PostCard({ post, onChange, detail = false }) {
   return (
     <article className={`post-card ${detail ? "is-detail" : ""}`}>
       <header className="post-head">
-        <Link to={`/creators/${author.username}`} aria-label={`Профиль ${author.displayName}`}><Avatar user={author} /></Link>
-        <div className="post-author">
-          <div className="author-line">
-            <Link to={`/creators/${author.username}`} className="author-name">{author.displayName}</Link>
-            {author.verified && <Check className="verified" size={14} aria-label="Проверенный автор" />}
-            <span>@{author.username}</span><i>·</i><time dateTime={post.createdAt}>{timeAgo(post.createdAt)}</time>
-          </div>
-        </div>
+        {detail ? (
+          <Link to="/author" className="post-byline">
+            <Avatar user={author} />
+            <span><strong>{author.displayName}</strong>{published && <time dateTime={post.createdAt}>{published}</time>}</span>
+          </Link>
+        ) : published && <time className="post-date" dateTime={post.createdAt}>{published}</time>}
         <VisibilityBadge visibility={post.visibility} />
       </header>
 
       <div className="post-body">
-        <h3 className="post-title">{detail ? post.title : <Link to={`/posts/${post.id}`}>{post.title}</Link>}</h3>
-        <p className={`post-text ${detail ? "" : "clamp"}`}>{post.content}</p>
-        {post.locked && (
+        {detail ? <h1 className="post-title">{post.title}</h1> : (
+          <h2 className="post-title">
+            <Link to={postPath} state={{ returnTo }}>
+              <span>{post.title}</span><ArrowUpRight className="post-title-arrow" size={20} aria-hidden="true" />
+            </Link>
+          </h2>
+        )}
+        {detail ? <PostContent content={visibleContent} className="post-text post-content" reader={!locked} /> : text && <p className="post-text clamp">{text}</p>}
+        {locked && (
           <div className="locked-box">
-            <div className="lock-circle"><Lock size={18} /></div>
-            <div><strong>Контент для подписчиков</strong><p>Оформите подписку, чтобы прочитать публикацию полностью.</p></div>
-            <Link className="btn btn-primary btn-sm" to={`/creators/${author.username}?tab=tiers`}>Поддержать</Link>
+            <div className="lock-circle"><Lock size={18} aria-hidden="true" /></div>
+            <div><strong>Контент для подписчиков</strong><p>{USE_MOCKS ? "Оформите подписку, чтобы прочитать публикацию полностью." : "Доступ к этой публикации пока закрыт."}</p></div>
+            {USE_MOCKS && <Link className="btn btn-primary btn-sm" to="/author">Поддержать</Link>}
           </div>
         )}
       </div>
 
       <footer className="post-actions">
-        <button className={`action ${post.liked ? "on" : ""}`} onClick={like} aria-pressed={post.liked} aria-label="Нравится">
-          <Heart size={18} fill={post.liked ? "currentColor" : "none"} /><span>{formatCount(post.likes)}</span>
+        <button type="button" className="action" onClick={run(api.posts.toggleLike)} disabled={busy || loading} aria-pressed={Boolean(post.liked)} aria-label="Нравится" title="Нравится">
+          <Heart size={18} fill={post.liked ? "currentColor" : "none"} aria-hidden="true" />{USE_MOCKS && <span>{formatCount(post.likes)}</span>}
         </button>
-        <Link className="action" to={`/posts/${post.id}#comments`} aria-label="Комментарии"><MessageCircle size={18} /><span>{formatCount(post.comments)}</span></Link>
-        <button className="action" onClick={share} aria-label="Скопировать ссылку"><Link2 size={18} /></button>
-        <button className={`action push-right ${post.bookmarked ? "on" : ""}`} onClick={bookmark} aria-pressed={post.bookmarked} aria-label="Сохранить">
-          <Bookmark size={18} fill={post.bookmarked ? "currentColor" : "none"} />
+        {USE_MOCKS && <Link className="action" to={`${postPath}#comments`} state={detail ? location.state : { returnTo }} aria-label="Комментарии"><MessageCircle size={18} aria-hidden="true" /><span>{formatCount(post.comments)}</span></Link>}
+        <button type="button" className="action" onClick={share} aria-label="Скопировать ссылку" title="Скопировать ссылку"><Link2 size={18} aria-hidden="true" /></button>
+        <button type="button" className="action push-right" onClick={run(api.posts.toggleBookmark, (next) => next.bookmarked ? "Добавлено в сохранённое" : "Удалено из сохранённого")} disabled={busy || loading} aria-pressed={Boolean(post.bookmarked)} aria-label="Сохранить" title="Закладка">
+          <Bookmark size={18} fill={post.bookmarked ? "currentColor" : "none"} aria-hidden="true" />
         </button>
       </footer>
     </article>

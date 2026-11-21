@@ -1,12 +1,10 @@
 import { useEffect } from "react";
-import { Route, Routes, useLocation } from "react-router-dom";
+import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import AppLayout from "./layout/AppLayout.jsx";
 import AuthLayout from "./layout/AuthLayout.jsx";
 import ProtectedRoute from "./layout/ProtectedRoute.jsx";
 import Home from "./pages/Home.jsx";
-import Explore from "./pages/Explore.jsx";
 import Creator from "./pages/Creator.jsx";
-import Subscriptions from "./pages/Subscriptions.jsx";
 import Saved from "./pages/Saved.jsx";
 import CreatePost from "./pages/CreatePost.jsx";
 import PostDetails from "./pages/PostDetails.jsx";
@@ -32,14 +30,16 @@ export default function App() {
         </Route>
         <Route element={<AppLayout />}>
           <Route index element={<Home />} />
-          <Route path="explore" element={<Explore />} />
+          <Route path="explore" element={<Home search />} />
+          <Route path="author" element={<Creator />} />
           <Route path="creators/:username" element={<Creator />} />
           <Route path="posts/:id" element={<PostDetails />} />
           <Route path="settings" element={<Settings />} />
+          <Route path="subscriptions" element={<Navigate to="/author" replace />} />
           <Route element={<ProtectedRoute />}>
-            <Route path="subscriptions" element={<Subscriptions />} />
             <Route path="saved" element={<Saved />} />
             <Route path="new" element={<CreatePost />} />
+            <Route path="posts/:id/edit" element={<CreatePost />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Route>

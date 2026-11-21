@@ -1,156 +1,84 @@
+import { AUTHOR_USERNAME, isAuthor } from "../config.js";
+import { ApiError, request } from "../client.js";
+import { userFromApi } from "../mappers.js";
+import { posts } from "./posts.js";
 
-import { request, notSupported } from "../client.js";
-import { postFromApi, userFromApi } from "../mappers.js";
-
-const byDate = (a, b) =>
-  new Date(b.createdAt) - new Date(a.createdAt);
-
-// Получение и фильтрация публикаций
-async function listPosts({ filter = "all", q = "" } = {}) {
-  const raw = await request("/posts");
-
-  if (!Array.isArray(raw)) {
-    throw new Error("Некорректный ответ API: ожидался массив публикаций");
+async function me() {
+  try {
+    return userFromApi(await request("/users/me"));
+  } catch (error) {
+    if (error.status === 401) return null;
+    throw error;
   }
+}
 
-  let items = raw.map(postFromApi).sort(byDate);
+async function openSession(path, body) {
+  await request(path, { method: "POST", body });
+  const user = await me();
+  if (!user) throw new ApiError("Сессия не открылась. Проверьте адрес API и настройки cookie.", 401);
+  return user;
+}
 
-  if (filter === "public" || filter === "paid") {
-    items = items.filter((post) => post.visibility === filter);
-  }
-
-  const search = q.trim().toLowerCase();
-
-  if (search) {
-    items = items.filter((post) =>
-      `${post.title} ${post.content}`.toLowerCase().includes(search)
-    );
-  }
-
-  return items;
+async function getProfile(username, signal) {
+  const result = await request(`/creators/${encodeURIComponent(username)}`, { signal });
+  return userFromApi(result, username);
 }
 
 export const realApi = {
-  // Авторизация
   auth: {
-    async register(data) {
-      await request("/users/register", {
-        method: "POST",
-        body: {
-          email: data.email,
-          username: data.username,
-          password: data.password,
-        },
-      });
-
-      // После регистрации выполняем вход
-      return realApi.auth.login({
-        username: data.username,
-        password: data.password,
-      });
-    },
-
-    async login({ username, password }) {
-      const response = await request("/users/login", {
-        method: "POST",
-        body: {
-          username,
-          password,
-        },
-      });
-
-      // Backend устанавливает JWT в HttpOnly Cookie
-      // Поэтому access_token из localStorage не нужен
-      return userFromApi(response.user || response, username);
-    },
-
+    me,
+    register: ({ email, username, password }) =>
+      openSession("/users/register", { email: email.trim(), username: username.trim(), password }),
+    login: ({ username, password }) =>
+      openSession("/users/login", { username: username.trim(), password }),
     async logout() {
-      await request("/users/logout", {
-        method: "POST",
-      });
+      await request("/users/logout", { method: "POST" });
+      if (await me()) throw new ApiError("Сервер не завершил сессию. Вы всё ещё в аккаунте.", 502);
+    },
+  },
 
+  posts,
+
+  creators: {
+    async get(username) {
+      const profile = await getProfile(username);
+      if (!isAuthor(profile.id)) throw new ApiError("Профиль автора не найден.", 404);
+      return profile;
+    },
+
+    async author(signal) {
+      if (AUTHOR_USERNAME) {
+        const profile = await getProfile(AUTHOR_USERNAME, signal);
+        if (isAuthor(profile.id)) return profile;
+        throw new ApiError("VITE_AUTHOR_USERNAME должен указывать на аккаунт автора.", 404);
+      }
+
+      // Without a configured username, resolve the owner from the publication metadata.
+      const limit = 12;
+      for (let offset = 0; !signal?.aborted; offset += limit) {
+        const entries = await posts.page({ offset, limit, signal });
+        const latest = entries.find((post) => isAuthor(post.authorId));
+        if (latest) return latest.author;
+        if (entries.length < limit) break;
+      }
       return null;
     },
-
-    async me() {
-      try {
-        const response = await request("/users/me");
-
-        if (!response || !response.id) {
-          throw new Error("Некорректный ответ при получении пользователя");
-        }
-
-        return userFromApi(response);
-      } catch (error) {
-        if (error.status === 401) {
-          return null;
-        }
-
-        throw error;
-      }
-    },
   },
 
-  // Публикации
-  posts: {
-    list: listPosts,
-
-    async get(id) {
-      const response = await request(`/posts/${id}`);
-      return postFromApi(response);
-    },
-
-    async create({ title, content, visibility }) {
-      const response = await request("/posts", {
-        method: "POST",
+  profile: {
+    async update({ displayName, bio, avatarUrl, websiteUrl }) {
+      await request("/creators/me", {
+        method: "PATCH",
         body: {
-          title,
-          content,
-          visibility,
+          display_name: displayName.trim(),
+          bio: bio.trim() || null,
+          avatar_url: avatarUrl?.trim() || null,
+          website_url: websiteUrl?.trim() || null,
         },
       });
-
-      return postFromApi(response);
+      const user = await me();
+      if (!user) throw new ApiError("Войдите в аккаунт, чтобы продолжить.", 401);
+      return user;
     },
-
-    async listByAuthor(authorId) {
-      const posts = await listPosts();
-
-      return posts.filter(
-        (post) => String(post.authorId) === String(authorId)
-      );
-    },
-
-    toggleLike: notSupported("Лайки"),
-    toggleBookmark: notSupported("Закладки"),
-    listBookmarked: notSupported("Сохранённое"),
-    comments: notSupported("Комментарии"),
-    addComment: notSupported("Комментарии"),
-  },
-
-  // Авторы
-  creators: {
-    list: notSupported("Каталог авторов"),
-
-    categories: async () => [],
-
-    suggested: async () => [],
-
-    async get(username) {
-      const response = await request(
-        `/creators/${encodeURIComponent(username)}`
-      );
-
-      return userFromApi(response, username);
-    },
-
-    subscribe: notSupported("Подписки"),
-    unsubscribe: notSupported("Подписки"),
-    listSubscriptions: notSupported("Подписки"),
-  },
-
-  // Профиль
-  profile: {
-    update: notSupported("Редактирование профиля"),
   },
 };
